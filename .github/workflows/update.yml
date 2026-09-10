@@ -15,7 +15,7 @@ permissions:
 jobs:
   update:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 360
 
     steps:
       - name: Checkout updater
@@ -24,7 +24,16 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Discover all movie page URLs from sitemap
+      - name: Install dependencies
+        run: npm install
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Full sitemap update with direct #1 + #2
         env:
+          XIEC_TOKEN: ${{ secrets.XIEC_TOKEN }}
+          TARGET_REPO: hmtnvac-cpu/xiec
+          TARGET_PATH: data/ket_qua_1500_phim.json
           SOURCE_URL: https://vlxx.phd/
-        run: node sitemap-discovery.js
+          FULL_CONCURRENCY: '8'
+          CHECKPOINT_EVERY: '10'
+        run: node sitemap-full-update.js
