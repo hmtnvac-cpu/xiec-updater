@@ -24,8 +24,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Probe IDs 3222-3241
+      - name: Discover all movie page URLs from sitemap
         env:
-          PROBE_START: '3222'
-          PROBE_COUNT: '20'
-        run: node probe-next-ids.js
+          SOURCE_URL: https://vlxx.phd/
+        run: node sitemap-discovery.js
