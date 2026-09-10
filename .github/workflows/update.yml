@@ -28,36 +28,14 @@ jobs:
           node-version: '20'
       - name: Install dependencies
         run: npm install
-      - name: Scan official source categories
-        env:
-          SOURCE_URL: https://vlxx.phd/
-        run: node scan-categories.js
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
-      - name: Patch large JSON readers
-        run: node patch-large-json.js
-      - name: Crawl and update private repo
+      - name: Test #2 on 10 newest movies - adaptive wait
         env:
           XIEC_TOKEN: ${{ secrets.XIEC_TOKEN }}
           TARGET_REPO: hmtnvac-cpu/xiec
           TARGET_PATH: data/ket_qua_1500_phim.json
-          SOURCE_URL: https://vlxx.phd/
-          MAX_LIST_PAGES: '3'
-          MAX_NEW_MOVIES: '50'
-        run: npm run update
-      - name: Backfill runtime for all missing movies
-        env:
-          XIEC_TOKEN: ${{ secrets.XIEC_TOKEN }}
-          TARGET_REPO: hmtnvac-cpu/xiec
-          TARGET_PATH: data/ket_qua_1500_phim.json
-          DURATION_LIMIT: '1501'
-          DURATION_CONCURRENCY: '10'
-        run: node duration-probe.js
-      - name: Scan and persist all catalog badges
-        env:
-          XIEC_TOKEN: ${{ secrets.XIEC_TOKEN }}
-          TARGET_REPO: hmtnvac-cpu/xiec
-          TARGET_PATH: data/ket_qua_1500_phim.json
-          SOURCE_URL: https://vlxx.phd/
-          MAX_LIST_PAGES: '170'
-        run: node scan-vietsub.js
+          STREAM2_LIMIT: '10'
+          STREAM2_CONCURRENCY: '10'
+          STREAM2_WAIT_LEVELS: '8000,5000,3000,1500'
+        run: node stream2-test.js
