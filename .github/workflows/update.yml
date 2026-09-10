@@ -22,21 +22,20 @@ jobs:
     steps:
       - name: Checkout updater
         uses: actions/checkout@v4
-
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-
       - name: Install dependencies
         run: npm install
-
+      - name: Scan official source categories
+        env:
+          SOURCE_URL: https://vlxx.phd/
+        run: node scan-categories.js
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
-
       - name: Patch large JSON readers
         run: node patch-large-json.js
-
       - name: Crawl and update private repo
         env:
           XIEC_TOKEN: ${{ secrets.XIEC_TOKEN }}
@@ -46,7 +45,6 @@ jobs:
           MAX_LIST_PAGES: '3'
           MAX_NEW_MOVIES: '50'
         run: npm run update
-
       - name: Fast duration probe on 20 movies
         env:
           XIEC_TOKEN: ${{ secrets.XIEC_TOKEN }}
@@ -55,7 +53,6 @@ jobs:
           DURATION_LIMIT: '20'
           DURATION_CONCURRENCY: '10'
         run: node duration-probe.js
-
       - name: Scan and persist all catalog badges
         env:
           XIEC_TOKEN: ${{ secrets.XIEC_TOKEN }}
