@@ -16,6 +16,15 @@ function normalize(url) {
   }
 }
 
+function normalizeBadge(value = '') {
+  return value.replace(/\s+/g, ' ').trim();
+}
+
+function isVietsubBadge(value = '') {
+  const s = normalizeBadge(value).toLowerCase();
+  return s === 'vietsub' || s === 'viet sub' || s === 'việt sub' || s === 'vsub';
+}
+
 async function readTarget() {
   if (!GH_TOKEN) throw new Error('Missing XIEC_TOKEN');
   const url = `https://api.github.com/repos/${TARGET_REPO}/contents/${TARGET_PATH}`;
@@ -24,7 +33,7 @@ async function readTarget() {
       Authorization: `Bearer ${GH_TOKEN}`,
       Accept: 'application/vnd.github+json',
       'X-GitHub-Api-Version': '2022-11-28',
-      'User-Agent': 'xiec-updater-vietsub'
+      'User-Agent': 'xiec-updater-badges'
     }
   });
   if (!res.ok) throw new Error(`GitHub read failed: ${res.status} ${await res.text()}`);
@@ -44,10 +53,10 @@ async function writeTarget(sha, movies) {
       Accept: 'application/vnd.github+json',
       'X-GitHub-Api-Version': '2022-11-28',
       'Content-Type': 'application/json',
-      'User-Agent': 'xiec-updater-vietsub'
+      'User-Agent': 'xiec-updater-badges'
     },
     body: JSON.stringify({
-      message: `Update Vietsub flags ${new Date().toISOString().slice(0, 10)}`,
+      message: `Update movie badges ${new Date().toISOString().slice(0, 10)}`,
       content: Buffer.from(JSON.stringify(movies, null, 2)).toString('base64'),
       sha,
       branch: 'main'
@@ -82,71 +91,106 @@ async function writeTarget(sha, movies) {
     await page.waitForTimeout(1500);
 
     const cards = await page.evaluate(() => {
+      const clean = s => (s || '').replace(/\s+/g, ' ').trim();
       const anchors = [...document.querySelectorAll('a[href*="/video/"]')];
-      return anchors.map(a => {
-        let node = a;
-        let chosen = null;
-        for (let depth = 0; depth < 7 && node; depth++, node = node.parentElement) {
-          const text = (node.innerText || node.textContent || '').replace(/\s+/g, ' ').trim();
-          const html = node.outerHTML || '';
-          const hasVietsub = /viet\s*sub|vsub|việt\s*sub/i.test(`${text} ${html}`);
-          if (hasVietsub) {
-            chosen = { text, html: html.slice(0, 1200), depth };
-            break;
-          }
-          if (!chosen && text && text.length < 500) chosen = { text, html: html.slice(0, 1200), depth };
+      const seen = new Set();
+      const results = [];
+
+      for (const a of anchors) {
+        const href = a.href;
+        if (!href || seen.has(href)) continue;
+        seen.add(href);
+
+        // Find the smallest ancestor that belongs to this movie only.
+        let card = a;
+        for (let depth = 0; depth < 8 && card.parentElement; depth++) {
+          const parent = card.parentElement;
+          const movieLinks = [...parent.querySelectorAll('a[href*="/video/"]')]
+            .map(x => x.href)
+            .filter(Boolean);
+          const uniqueMovieLinks = [...new Set(movieLinks)];
+          if (uniqueMovieLinks.length > 1) break;
+          card = parent;
         }
-        const containerText = chosen?.text || '';
-        const containerHtml = chosen?.html || '';
-        return {
-          url: a.href,
-          title: (a.getAttribute('title') || a.innerText || '').replace(/\s+/g, ' ').trim(),
-          vietsub: /viet\s*sub|vsub|việt\s*sub/i.test(`${containerText} ${containerHtml}`),
-          evidence: /viet\s*sub|vsub|việt\s*sub/i.test(containerText)
-            ? containerText
-            : (containerHtml.match(/.{0,80}(?:viet\s*sub|vsub|việt\s*sub).{0,80}/i)?.[0] || '')
-        };
-      });
+
+        const title = clean(a.getAttribute('title') || a.innerText || '');
+        const candidates = [];
+        const nodes = [...card.querySelectorAll('*')];
+
+        for (const el of nodes) {
+          if (el.closest('a[href*="/video/"]') === a && el !== a) {
+            // still allow overlay children; only exclude long title-like text below
+          }
+          const text = clean(el.innerText || el.textContent || '');
+          if (!text || text.length > 32) continue;
+          if (title && text === title) continue;
+
+          const cls = `${el.className || ''} ${el.id || ''}`.toLowerCase();
+          const style = getComputedStyle(el);
+          const rect = el.getBoundingClientRect();
+          const semantic = /(badge|label|tag|status|quality|sub|uncen|episode|ep|hd|type|icon)/i.test(cls);
+          const overlay = style.position === 'absolute' || style.position === 'fixed';
+          const visuallySmall = rect.width > 0 && rect.height > 0 && rect.height <= 45 && rect.width <= 180;
+
+          if (semantic || overlay || visuallySmall) candidates.push(text);
+        }
+
+        // Preserve every distinct short label exactly as shown by the site.
+        const badges = [...new Set(candidates)]
+          .filter(x => x && x !== title)
+          .slice(0, 20);
+
+        results.push({
+          url: href,
+          title,
+          badges,
+          cardText: clean(card.innerText || card.textContent || '').slice(0, 300)
+        });
+      }
+      return results;
     });
 
     for (const card of cards) {
       const url = normalize(card.url);
-      if (!all.has(url) || card.vietsub) all.set(url, { ...card, url });
+      if (!all.has(url)) all.set(url, { ...card, url });
     }
   }
 
   await browser.close();
 
   const items = [...all.values()];
+  for (const item of items) {
+    item.vietsub = item.badges.some(isVietsubBadge);
+  }
+
   const vs = items.filter(x => x.vietsub);
-  const no = items.filter(x => !x.vietsub);
-  console.log(`VIETSUB_SCAN total=${items.length} vietsub=${vs.length} no_badge=${no.length}`);
-
-  for (const x of vs.slice(0, 20)) {
-    console.log(`VIETSUB YES | ${x.url} | ${x.title || '(no title)'} | ${x.evidence.slice(0, 180)}`);
-  }
-  for (const x of no.slice(0, 10)) {
-    console.log(`VIETSUB NO | ${x.url} | ${x.title || '(no title)'}`);
+  console.log(`BADGE_SCAN total=${items.length} vietsub=${vs.length} non_vietsub=${items.length - vs.length}`);
+  for (const x of items.slice(0, 30)) {
+    console.log(`BADGES | ${x.url} | ${JSON.stringify(x.badges)} | vietsub=${x.vietsub}`);
   }
 
-  const badgeByUrl = new Map(items.map(x => [normalize(x.url), !!x.vietsub]));
+  const byUrl = new Map(items.map(x => [normalize(x.url), x]));
   const { sha, movies } = await readTarget();
   let changed = 0;
 
   const updated = movies.map(movie => {
-    const key = normalize(movie.page_url || '');
-    if (!badgeByUrl.has(key)) return movie;
-    const next = badgeByUrl.get(key);
-    if (movie.vietsub === next) return movie;
+    const hit = byUrl.get(normalize(movie.page_url || ''));
+    if (!hit) return movie;
+
+    const nextBadges = hit.badges;
+    const nextVietsub = hit.vietsub;
+    const sameBadges = JSON.stringify(movie.badges || []) === JSON.stringify(nextBadges);
+    if (movie.vietsub === nextVietsub && sameBadges) return movie;
+
     changed++;
-    return { ...movie, vietsub: next };
+    return { ...movie, badges: nextBadges, vietsub: nextVietsub };
   });
 
   if (!changed) {
-    console.log('VIETSUB_FLAGS no changes needed');
+    console.log('BADGE_FLAGS no changes needed');
     return;
   }
 
   await writeTarget(sha, updated);
-  console.log(`VIETSUB_FLAGS updated=${changed}`);
+  console.log(`BADGE_FLAGS updated=${changed}`);
 })();
