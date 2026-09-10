@@ -7,6 +7,10 @@ on:
     - cron: '0 0 * * *' # 07:00 Asia/Ho_Chi_Minh
   workflow_dispatch:
 
+concurrency:
+  group: xiec-updater-main
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
@@ -30,11 +34,6 @@ jobs:
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
 
-      - name: Probe movie server #1 and #2
-        env:
-          TEST_MOVIE_URL: https://vlxx.phd/video/bi-tu-choi-tinh-cam-thanh-nien-du-luon-ca-2-me-con-crush/3221/
-        run: node scan-servers.js
-
       - name: Crawl and update private repo
         env:
           XIEC_TOKEN: ${{ secrets.XIEC_TOKEN }}
@@ -45,12 +44,13 @@ jobs:
           MAX_NEW_MOVIES: '50'
         run: npm run update
 
-      - name: Full metadata and streams backfill
+      - name: Fast full metadata and streams backfill
         env:
           XIEC_TOKEN: ${{ secrets.XIEC_TOKEN }}
           TARGET_REPO: hmtnvac-cpu/xiec
           TARGET_PATH: data/ket_qua_1500_phim.json
-          BACKFILL_CONCURRENCY: '4'
+          META_CONCURRENCY: '12'
+          STREAM_CONCURRENCY: '6'
           CHECKPOINT_EVERY: '100'
         run: node backfill.js
 
