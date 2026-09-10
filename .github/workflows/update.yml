@@ -15,7 +15,7 @@ permissions:
 jobs:
   update:
     runs-on: ubuntu-latest
-    timeout-minutes: 360
+    timeout-minutes: 30
 
     steps:
       - name: Checkout updater
@@ -24,26 +24,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Install dependencies
-        run: npm install
-      - name: Install Chromium
-        run: npx playwright install --with-deps chromium
-      - name: Fast scan from page 50 until site ends
+      - name: Probe IDs 3222-3241
         env:
-          XIEC_TOKEN: ${{ secrets.XIEC_TOKEN }}
-          TARGET_REPO: hmtnvac-cpu/xiec
-          TARGET_PATH: data/ket_qua_1500_phim.json
-          SOURCE_URL: https://vlxx.phd/
-          START_PAGE: '50'
-          MAX_PAGE: '1000'
-          FAST_CONCURRENCY: '8'
-          STOP_EMPTY: '2'
-        run: node fast-full-scan.js
-      - name: Backfill #2 only where still missing
-        env:
-          XIEC_TOKEN: ${{ secrets.XIEC_TOKEN }}
-          TARGET_REPO: hmtnvac-cpu/xiec
-          TARGET_PATH: data/ket_qua_1500_phim.json
-          STREAM2_LIMIT: '99999'
-          STREAM2_CONCURRENCY: '8'
-        run: node stream2-test.js
+          PROBE_START: '3222'
+          PROBE_COUNT: '20'
+        run: node probe-next-ids.js
