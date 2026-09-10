@@ -1,0 +1,15 @@
+{
+  "name": "xiec-updater",
+  "version": "1.0.0",
+  "private": true,
+  "type": "commonjs",
+  "scripts": {
+    "update": "node update.js"
+  },
+  "dependencies": {
+    "playwright": "1.55.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
