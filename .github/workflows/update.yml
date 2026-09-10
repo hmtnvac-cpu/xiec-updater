@@ -3,8 +3,6 @@ name: Update private Xiec movies
 on:
   push:
     branches: [main]
-  schedule:
-    - cron: '0 0 * * *' # 07:00 Asia/Ho_Chi_Minh
   workflow_dispatch:
 
 concurrency:
@@ -17,46 +15,24 @@ permissions:
 jobs:
   update:
     runs-on: ubuntu-latest
-    timeout-minutes: 360
+    timeout-minutes: 60
 
     steps:
       - name: Checkout updater
         uses: actions/checkout@v4
-
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-
       - name: Install dependencies
         run: npm install
-
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
-
-      - name: Patch large JSON readers
-        run: node patch-large-json.js
-
-      - name: Patch listing scan to start at page 51
-        run: |
-          sed -i 's/for (let p = 1; p <= MAX_LIST_PAGES; p++)/for (let p = 51; p <= MAX_LIST_PAGES; p++)/' update.js
-
-      - name: Scan source from page 51 onward
+      - name: Pilot direct #1 on 10 newest movies
         env:
           XIEC_TOKEN: ${{ secrets.XIEC_TOKEN }}
           TARGET_REPO: hmtnvac-cpu/xiec
           TARGET_PATH: data/ket_qua_1500_phim.json
-          SOURCE_URL: https://vlxx.phd/
-          MAX_LIST_PAGES: '200'
-          MAX_NEW_MOVIES: '10000'
-          MAX_REPAIR_MOVIES: '0'
-        run: npm run update
-
-      - name: Capture only missing #2 streams
-        env:
-          XIEC_TOKEN: ${{ secrets.XIEC_TOKEN }}
-          TARGET_REPO: hmtnvac-cpu/xiec
-          TARGET_PATH: data/ket_qua_1500_phim.json
-          STREAM2_LIMIT: '99999'
-          STREAM2_CONCURRENCY: '8'
-        run: node stream2-test.js
+          STREAM1_LIMIT: '10'
+          STREAM1_CONCURRENCY: '5'
+        run: node stream1-test.js
