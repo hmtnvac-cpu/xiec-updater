@@ -37,9 +37,6 @@ jobs:
       - name: Patch large JSON readers
         run: node patch-large-json.js
 
-      - name: Patch real metadata selectors
-        run: node patch-backfill-v3.js
-
       - name: Crawl and update private repo
         env:
           XIEC_TOKEN: ${{ secrets.XIEC_TOKEN }}
@@ -50,15 +47,14 @@ jobs:
           MAX_NEW_MOVIES: '50'
         run: npm run update
 
-      - name: Full metadata and streams backfill v3
+      - name: Fast duration probe on 20 movies
         env:
           XIEC_TOKEN: ${{ secrets.XIEC_TOKEN }}
           TARGET_REPO: hmtnvac-cpu/xiec
           TARGET_PATH: data/ket_qua_1500_phim.json
-          META_CONCURRENCY: '12'
-          STREAM_CONCURRENCY: '6'
-          CHECKPOINT_EVERY: '100'
-        run: node backfill.js
+          DURATION_LIMIT: '20'
+          DURATION_CONCURRENCY: '10'
+        run: node duration-probe.js
 
       - name: Scan and persist all catalog badges
         env:
