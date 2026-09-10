@@ -15,7 +15,7 @@ permissions:
 jobs:
   update:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 360
 
     steps:
       - name: Checkout updater
@@ -28,11 +28,22 @@ jobs:
         run: npm install
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
-      - name: Pilot direct #1 on 10 newest movies
+      - name: Fast scan from page 51 until site ends
         env:
           XIEC_TOKEN: ${{ secrets.XIEC_TOKEN }}
           TARGET_REPO: hmtnvac-cpu/xiec
           TARGET_PATH: data/ket_qua_1500_phim.json
-          STREAM1_LIMIT: '10'
-          STREAM1_CONCURRENCY: '5'
-        run: node stream1-test.js
+          SOURCE_URL: https://vlxx.phd/
+          START_PAGE: '51'
+          MAX_PAGE: '1000'
+          FAST_CONCURRENCY: '8'
+          STOP_EMPTY: '2'
+        run: node fast-full-scan.js
+      - name: Backfill #2 only where still missing
+        env:
+          XIEC_TOKEN: ${{ secrets.XIEC_TOKEN }}
+          TARGET_REPO: hmtnvac-cpu/xiec
+          TARGET_PATH: data/ket_qua_1500_phim.json
+          STREAM2_LIMIT: '99999'
+          STREAM2_CONCURRENCY: '8'
+        run: node stream2-test.js
