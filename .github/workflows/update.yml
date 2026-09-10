@@ -34,13 +34,11 @@ jobs:
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
 
-      - name: Diagnose real metadata selectors
-        env:
-          TEST_MOVIE_URL: https://vlxx.phd/video/bi-tu-choi-tinh-cam-thanh-nien-du-luon-ca-2-me-con-crush/3221/
-        run: node diagnose-meta.js
-
       - name: Patch large JSON readers
         run: node patch-large-json.js
+
+      - name: Patch real metadata selectors
+        run: node patch-backfill-v3.js
 
       - name: Crawl and update private repo
         env:
@@ -52,7 +50,7 @@ jobs:
           MAX_NEW_MOVIES: '50'
         run: npm run update
 
-      - name: Fast full metadata and streams backfill
+      - name: Full metadata and streams backfill v3
         env:
           XIEC_TOKEN: ${{ secrets.XIEC_TOKEN }}
           TARGET_REPO: hmtnvac-cpu/xiec
