@@ -28,13 +28,13 @@ jobs:
         run: npm install
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
-      - name: Fast scan from page 51 until site ends
+      - name: Fast scan from page 50 until site ends
         env:
           XIEC_TOKEN: ${{ secrets.XIEC_TOKEN }}
           TARGET_REPO: hmtnvac-cpu/xiec
           TARGET_PATH: data/ket_qua_1500_phim.json
           SOURCE_URL: https://vlxx.phd/
-          START_PAGE: '51'
+          START_PAGE: '50'
           MAX_PAGE: '1000'
           FAST_CONCURRENCY: '8'
           STOP_EMPTY: '2'
