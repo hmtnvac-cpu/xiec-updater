@@ -1,0 +1,39 @@
+name: Update private Xiec movies
+
+on:
+  schedule:
+    - cron: '0 0 * * *' # 07:00 Asia/Ho_Chi_Minh
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout updater
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Crawl and update private repo
+        env:
+          XIEC_TOKEN: ${{ secrets.XIEC_TOKEN }}
+          TARGET_REPO: hmtnvac-cpu/xiec
+          TARGET_PATH: data/ket_qua_1500_phim.json
+          SOURCE_URL: https://vlxx.phd/
+          MAX_LIST_PAGES: '3'
+          MAX_NEW_MOVIES: '50'
+        run: npm run update
