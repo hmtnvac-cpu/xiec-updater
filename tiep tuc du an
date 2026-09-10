@@ -1,0 +1,43 @@
+TIEP TUC DU AN — XIEC-UPDATER
+Cap nhat: 2026-09-10
+
+Vai tro repo:
+- Repo phu tro cho hmtnvac-cpu/xiec de crawl/backfill/audit metadata va stream.
+- Da dung Playwright/Chromium va GitHub Actions de xu ly hang loat.
+
+Tien trinh da lam tu luc tiep quan:
+- Kiem tra/backfill metadata: the loai, ma phim, quoc gia, runtime, dien vien, vietsub va cac thong tin giao dien lien quan.
+- Test #1 tren 10 phim: cach doc player s1 khop voi link #1 cu.
+- Test #2 tren 10 phim va xac nhan phat duoc trong addon.
+- Cac cach thu qua pagination /page/50, /page/51 khong tim duoc danh sach phim nen da bo.
+- Test do media ID tu 03222 den 03241: 20/20 deu 404, khong dung quy luat tang so de discovery.
+- sitemap-discovery.js xac nhan sitemap nguon co 3.221 URL phim.
+- sitemap-full-update.js duoc tao de doc sitemap, lay s1+s2, chay song song, checkpoint moi 10 phim va ghi sang repo xiec.
+- Run #48 xu ly 1.720/1.720 stream thanh cong nhung gap collision ID, chi them 220 record; loi da xac dinh.
+- Da sua dedupe theo page_url va tao ID movie_web_<source-id> neu id bi trung.
+- Run #49 sau khi sua: FULL_START sitemap=3221 existing=1721 missing=1500; FULL_DONE processed=1500 success=1500 failed=0 total=3221.
+- Toan bo 1.500 phim cua Run #49 deu co s2=ok. Mot so record co s1=miss nhung s2=ok, vi vay van duoc them.
+
+Quy tac ky thuat da xac nhan:
+- Discovery toan web: sitemap.xml, khong dung pagination de quet sau trang 50.
+- Dedupe: page_url la khoa chinh; khong dung id noi bo de suy ra cung phim.
+- Stream #1: chi coi hop le neu player tra manifest-s1.
+- Stream #2: chi coi hop le neu player tra manifest-s2.
+- Cong viec lau: checkpoint va ghi ket qua moi 10 phim.
+- Ngoai le loi stream phai gom retry rieng, khong lam lai nhom da thanh cong.
+
+Trang thai workflow hien tai:
+- .github/workflows/update.yml dang chay sitemap-full-update.js khi push vao main hoac workflow_dispatch.
+- FULL_CONCURRENCY=8, CHECKPOINT_EVERY=10, timeout 360 phut.
+- Workflow dung secret XIEC_TOKEN de ghi data/ket_qua_1500_phim.json sang repo hmtnvac-cpu/xiec.
+- Vi trigger hien co push, moi commit vao repo updater se co the khoi dong full updater. Can can nhac paths/dispatch neu muon tranh chay lai khong can thiet.
+
+CAN XU LY TIEP:
+1. Tao audit toan bo 3.221 phim va in thong ke chinh xac: s1 ok/missing, s2 ok/missing, page_url duplicate, id duplicate, metadata thieu.
+2. Neu audit thay #2 con thieu o 1.721 record cu, chi retry nhung record thieu.
+3. Sau khi audit, dong bo logic cap nhat hang ngay trong repo xiec sang sitemap + s1/s2; khong quay lai crawler pagination cu.
+4. Don dep/test script cu chi khi da chac chan khong con can; khong xoa tu y.
+
+Quy tac ban giao:
+- Moi thay doi quan trong sau nay phai NOI THEM vao file nay.
+- Khong sua/xoa phan cu, khong lap lai cac y da co.
