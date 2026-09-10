@@ -1,4 +1,4 @@
-name: Update private Xiec movies
+name: Audit Xiec addon data
 
 on:
   push:
@@ -13,9 +13,9 @@ permissions:
   contents: read
 
 jobs:
-  update:
+  audit:
     runs-on: ubuntu-latest
-    timeout-minutes: 360
+    timeout-minutes: 30
 
     steps:
       - name: Checkout updater
@@ -24,16 +24,58 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Install dependencies
-        run: npm install
-      - name: Install Chromium
-        run: npx playwright install --with-deps chromium
-      - name: Full sitemap update with direct #1 + #2
+      - name: Download addon dataset
         env:
           XIEC_TOKEN: ${{ secrets.XIEC_TOKEN }}
-          TARGET_REPO: hmtnvac-cpu/xiec
-          TARGET_PATH: data/ket_qua_1500_phim.json
-          SOURCE_URL: https://vlxx.phd/
-          FULL_CONCURRENCY: '8'
-          CHECKPOINT_EVERY: '10'
-        run: node sitemap-full-update.js
+        run: |
+          curl -L --fail \
+            -H "Authorization: Bearer $XIEC_TOKEN" \
+            -H "Accept: application/vnd.github.raw+json" \
+            https://api.github.com/repos/hmtnvac-cpu/xiec/contents/data/ket_qua_1500_phim.json \
+            -o movies.json
+          wc -c movies.json
+      - name: Audit all records
+        run: |
+          node <<'NODE'
+          const fs=require('fs');
+          const movies=JSON.parse(fs.readFileSync('movies.json','utf8'));
+          const has=(m,k)=>m[k]!==undefined&&m[k]!==null&&String(m[k]).trim()!=='';
+          const arr=(m,k)=>Array.isArray(m[k])&&m[k].length>0;
+          const getStreams=m=>Array.isArray(m.streams)?m.streams:[];
+          const hasS1=m=>getStreams(m).some(s=>/\/manifest-s1\//i.test(String(s?.url||'')))||/\/manifest-s1\//i.test(String(m.manifest_url||''));
+          const hasS2=m=>getStreams(m).some(s=>/\/manifest-s2\//i.test(String(s?.url||'')));
+          const counts={
+            total:movies.length,
+            s1:movies.filter(hasS1).length,
+            s2:movies.filter(hasS2).length,
+            title:movies.filter(m=>has(m,'title')).length,
+            poster:movies.filter(m=>has(m,'poster')).length,
+            description:movies.filter(m=>has(m,'description')).length,
+            page_url:movies.filter(m=>has(m,'page_url')).length,
+            genres:movies.filter(m=>arr(m,'genres')).length,
+            actors:movies.filter(m=>arr(m,'actors')).length,
+            runtime:movies.filter(m=>has(m,'runtime')).length,
+            code:movies.filter(m=>has(m,'code')).length,
+            country:movies.filter(m=>has(m,'country')).length,
+            year:movies.filter(m=>has(m,'year')).length,
+            vietsub:movies.filter(m=>m.vietsub===true).length,
+          };
+          const dup=(key,fn=x=>x)=>{const map=new Map();for(const m of movies){const v=fn(m[key]);if(!v)continue;map.set(v,(map.get(v)||0)+1)}return [...map.entries()].filter(([,n])=>n>1)};
+          const dupIds=dup('id');
+          const dupUrls=dup('page_url',v=>{try{const u=new URL(v);u.hash='';u.search='';return u.href}catch{return String(v||'')}});
+          const missingS1=movies.filter(m=>!hasS1(m)).map(m=>m.id);
+          const missingS2=movies.filter(m=>!hasS2(m)).map(m=>m.id);
+          const missingRuntime=movies.filter(m=>!has(m,'runtime')).map(m=>m.id);
+          const missingGenres=movies.filter(m=>!arr(m,'genres')).map(m=>m.id);
+          const missingCode=movies.filter(m=>!has(m,'code')).map(m=>m.id);
+          const missingCountry=movies.filter(m=>!has(m,'country')).map(m=>m.id);
+          const missingActors=movies.filter(m=>!arr(m,'actors')).map(m=>m.id);
+          const missingPoster=movies.filter(m=>!has(m,'poster')).map(m=>m.id);
+          console.log('AUDIT_COUNTS '+JSON.stringify(counts));
+          console.log(`AUDIT_DUP_IDS count=${dupIds.length}`);
+          console.log(`AUDIT_DUP_URLS count=${dupUrls.length}`);
+          for (const [name,list] of Object.entries({missingS1,missingS2,missingRuntime,missingGenres,missingCode,missingCountry,missingActors,missingPoster})) {
+            console.log(`AUDIT_${name.toUpperCase()} count=${list.length}`);
+            if(list.length) console.log(`AUDIT_${name.toUpperCase()}_SAMPLE ${list.slice(0,30).join(',')}`);
+          }
+          NODE
