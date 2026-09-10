@@ -1,6 +1,8 @@
 name: Update private Xiec movies
 
 on:
+  push:
+    branches: [main]
   schedule:
     - cron: '0 0 * * *' # 07:00 Asia/Ho_Chi_Minh
   workflow_dispatch:
@@ -27,6 +29,12 @@ jobs:
 
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
+
+      - name: Scan Vietsub badges
+        env:
+          SOURCE_URL: https://vlxx.phd/
+          MAX_LIST_PAGES: '3'
+        run: node scan-vietsub.js
 
       - name: Crawl and update private repo
         env:
