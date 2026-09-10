@@ -34,6 +34,11 @@ jobs:
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
 
+      - name: Diagnose real metadata selectors
+        env:
+          TEST_MOVIE_URL: https://vlxx.phd/video/bi-tu-choi-tinh-cam-thanh-nien-du-luon-ca-2-me-con-crush/3221/
+        run: node diagnose-meta.js
+
       - name: Patch large JSON readers
         run: node patch-large-json.js
 
