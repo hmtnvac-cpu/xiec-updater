@@ -30,12 +30,19 @@ jobs:
         run: npm install
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
-      - name: Test #2 on 10 newest movies - adaptive wait
+      - name: Test #2 on 10 newest movies in visible Chromium
         env:
           XIEC_TOKEN: ${{ secrets.XIEC_TOKEN }}
           TARGET_REPO: hmtnvac-cpu/xiec
           TARGET_PATH: data/ket_qua_1500_phim.json
           STREAM2_LIMIT: '10'
-          STREAM2_CONCURRENCY: '10'
-          STREAM2_WAIT_LEVELS: '8000,5000,3000,1500'
-        run: node stream2-test.js
+          STREAM2_CONCURRENCY: '3'
+          STREAM2_WAIT_MS: '12000'
+        run: xvfb-run -a node stream2-test.js
+      - name: Upload stream2 screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: stream2-debug
+          path: stream2-debug/
+          if-no-files-found: ignore
