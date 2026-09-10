@@ -13,7 +13,7 @@ permissions:
 jobs:
   update:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
 
     steps:
       - name: Checkout updater
@@ -40,11 +40,11 @@ jobs:
           MAX_NEW_MOVIES: '50'
         run: npm run update
 
-      - name: Scan and persist Vietsub badges
+      - name: Scan and persist all catalog badges
         env:
           XIEC_TOKEN: ${{ secrets.XIEC_TOKEN }}
           TARGET_REPO: hmtnvac-cpu/xiec
           TARGET_PATH: data/ket_qua_1500_phim.json
           SOURCE_URL: https://vlxx.phd/
-          MAX_LIST_PAGES: '3'
+          MAX_LIST_PAGES: '170'
         run: node scan-vietsub.js
