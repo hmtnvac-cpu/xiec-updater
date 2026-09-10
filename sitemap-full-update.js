@@ -100,15 +100,35 @@ async function extractMovie(browser,url,index,total){
     await Promise.all(Array.from({length:Math.min(CONCURRENCY,batchUrls.length)},worker));
     const good=results.filter(r=>r?.ok).map(r=>r.movie);
     const bad=results.filter(r=>r&&!r.ok);
+    let addedNow=0;
     if(good.length){
+      const knownUrls=new Set(movies.map(m=>norm(m.page_url)).filter(Boolean));
       const knownIds=new Set(movies.map(m=>m.id));
-      const uniqueGood=good.filter(m=>!knownIds.has(m.id));
-      movies=[...uniqueGood,...movies];
-      movies.sort((a,b)=>Number(pageId(b.page_url))-Number(pageId(a.page_url)));
-      sha=await writeTarget(sha,movies,`Full sitemap checkpoint: ${start+1}-${start+batchUrls.length}, +${uniqueGood.length}`);
+      const uniqueGood=[];
+      for(const movie of good){
+        const urlKey=norm(movie.page_url);
+        if(knownUrls.has(urlKey))continue;
+        let nextId=movie.id;
+        if(knownIds.has(nextId)){
+          const sid=pageId(movie.page_url);
+          nextId=`movie_web_${sid}`;
+          let suffix=2;
+          while(knownIds.has(nextId))nextId=`movie_web_${sid}_${suffix++}`;
+        }
+        const fixed={...movie,id:nextId};
+        uniqueGood.push(fixed);
+        knownUrls.add(urlKey);
+        knownIds.add(nextId);
+      }
+      addedNow=uniqueGood.length;
+      if(addedNow){
+        movies=[...uniqueGood,...movies];
+        movies.sort((a,b)=>Number(pageId(b.page_url))-Number(pageId(a.page_url)));
+        sha=await writeTarget(sha,movies,`Full sitemap checkpoint: ${start+1}-${start+batchUrls.length}, +${addedNow}`);
+      }
     }
     processed+=batchUrls.length;success+=good.length;failed+=bad.length;
-    console.log(`FULL_CHECKPOINT processed=${processed}/${missing.length} success=${success} failed=${failed} added_now=${good.length} total=${movies.length}`);
+    console.log(`FULL_CHECKPOINT processed=${processed}/${missing.length} success=${success} failed=${failed} added_now=${addedNow} total=${movies.length}`);
     for(const r of bad)console.log(`FULL_RETRY id=${r.id} error=${r.error}`);
   }
   await browser.close();
