@@ -30,6 +30,11 @@ jobs:
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
 
+      - name: Probe movie server #1 and #2
+        env:
+          TEST_MOVIE_URL: https://vlxx.phd/video/bi-tu-choi-tinh-cam-thanh-nien-du-luon-ca-2-me-con-crush/3221/
+        run: node scan-servers.js
+
       - name: Crawl and update private repo
         env:
           XIEC_TOKEN: ${{ secrets.XIEC_TOKEN }}
