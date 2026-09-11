@@ -1,4 +1,4 @@
-name: Repair Xiec addon data
+name: Discover source taxonomy
 
 on:
   push:
@@ -13,10 +13,9 @@ permissions:
   contents: read
 
 jobs:
-  repair:
+  taxonomy:
     runs-on: ubuntu-latest
-    timeout-minutes: 360
-
+    timeout-minutes: 30
     steps:
       - name: Checkout updater
         uses: actions/checkout@v4
@@ -28,17 +27,7 @@ jobs:
         run: npm install
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
-      - name: Repair only missing metadata/runtime/streams
+      - name: Read authoritative navigation and taxonomy from source
         env:
-          XIEC_TOKEN: ${{ secrets.XIEC_TOKEN }}
-          TARGET_REPO: hmtnvac-cpu/xiec
-          TARGET_PATH: data/ket_qua_1500_phim.json
-          REPAIR_CONCURRENCY: '8'
-          CHECKPOINT_EVERY: '10'
-        run: node repair-missing.js
-      - name: Audit final dataset and print real samples
-        env:
-          XIEC_TOKEN: ${{ secrets.XIEC_TOKEN }}
-          TARGET_REPO: hmtnvac-cpu/xiec
-          TARGET_PATH: data/ket_qua_1500_phim.json
-        run: node audit-target.js
+          SOURCE_URL: https://vlxx.phd/
+        run: node discover-site-taxonomy.js
