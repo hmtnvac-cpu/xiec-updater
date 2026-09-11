@@ -1,4 +1,4 @@
-name: Discover source taxonomy
+name: Build source category map
 
 on:
   push:
@@ -13,9 +13,9 @@ permissions:
   contents: read
 
 jobs:
-  taxonomy:
+  category-map:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 120
     steps:
       - name: Checkout updater
         uses: actions/checkout@v4
@@ -27,7 +27,10 @@ jobs:
         run: npm install
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
-      - name: Read authoritative navigation and taxonomy from source
+      - name: Crawl source category pages and write authoritative map
         env:
           SOURCE_URL: https://vlxx.phd/
-        run: node discover-site-taxonomy.js
+          XIEC_TOKEN: ${{ secrets.XIEC_TOKEN }}
+          TARGET_REPO: hmtnvac-cpu/xiec
+          CATEGORY_PATH: data/site-categories.json
+        run: node build-category-map.js
