@@ -41,3 +41,16 @@ CAN XU LY TIEP:
 Quy tac ban giao:
 - Moi thay doi quan trong sau nay phai NOI THEM vao file nay.
 - Khong sua/xoa phan cu, khong lap lai cac y da co.
+
+CAP NHAT KINH NGHIEM 2026-09-11:
+- Neu xay addon tu website phim: tach ro 4 lop: discovery phim (sitemap), metadata (page_url), stream (#1/#2), taxonomy/catalog (danh muc chinh thuc cua site). Khong tron taxonomy voi actors/tags scrape tu tung phim.
+- Taxonomy cho Trang chu phai lay tu menu/danh muc chinh thuc cua site va crawl page_url thuoc tung category. Khong tu dong tao catalog tu movies[].genres.
+- Danh muc nguoi dung chot can giu: Phim sex hay; Phim sex Vietsub; Phim sex khong che; Sex hoc sinh; Vung trom - Ngoai tinh; Phim cap 3; Sex My - Chau Au. Khong dua JAV, XVIDEOS, XNXX, XXX vao addon.
+- Dien vien chi la metadata actors/cast; khong tao category. Nuvio khong click cast de mo mot site/catalog rieng, nen khong xay logic dua vao click actor.
+- Mot phim chi co mot record/page_url, nhung co the thuoc nhieu danh muc. Category map chi la tap page_url tham chieu toi record do.
+- Cach lay stream da thanh cong: mo page_url, tim iframe/player s1 va s2, doc file trong window.__SRC/HTML; xac minh manifest-s1/manifest-s2. Khong suy dien media ID tu source ID.
+- Toan web: sitemap.xml la nguon discovery chinh; pagination khong dam bao du va khong nen dung de tim phan sau.
+- Dedupe: page_url. ID noi bo co the collision voi source id; khi collision dung movie_web_<source-id>.
+- Batch lon: concurrency vua phai, checkpoint moi 10 phim, ghi ket qua ngay, retry rieng phim loi.
+- Khi thay doi catalog manifest, bump version/catalog ID de tranh cache client; nhung can kiem tra deploy live truoc khi ket luan giao dien da doi.
+- "tiep tuc du an" phai duoc NOI THEM sau moi moc quan trong o ca repo addon va updater; day la handoff chinh, khong doi ket thuc moi ghi.
