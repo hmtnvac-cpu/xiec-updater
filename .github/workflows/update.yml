@@ -1,4 +1,4 @@
-name: Build source category map
+name: Discover source menu
 
 on:
   push:
@@ -13,9 +13,9 @@ permissions:
   contents: read
 
 jobs:
-  category-map:
+  discover-menu:
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 30
     steps:
       - name: Checkout updater
         uses: actions/checkout@v4
@@ -27,10 +27,7 @@ jobs:
         run: npm install
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
-      - name: Crawl source category pages and write authoritative map
+      - name: Discover authoritative homepage menu
         env:
           SOURCE_URL: https://vlxx.phd/
-          XIEC_TOKEN: ${{ secrets.XIEC_TOKEN }}
-          TARGET_REPO: hmtnvac-cpu/xiec
-          CATEGORY_PATH: data/site-categories.json
-        run: node build-category-map.js
+        run: node discover-site-menu.js
